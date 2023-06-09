@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "devenv"
+version = "0.1.0"
+description = "Run commands under different developer prompt environments"
+authors = []
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+[tool.poetry.dev-dependencies]
+black = "^22.10.0"
+pre-commit = "^2.19.0"
+
+[build-system]
+requires = ["poetry-core>=1.3.2"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.yapf]
+based_on_style = "yapf"
+spaces_before_comment = 2
+column_limit = 80
+indent_width = 4
+
+[tool.yapfignore]
+ignore_patterns = [
+    "venv/**/*.py",
+    ".venv/**/*.py",
+]
