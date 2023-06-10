@@ -60,6 +60,11 @@ REG_UNINSTALL32: str = (
 REG_UNINSTALL64: str = (
     "SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall")
 REG_INSTALL_LOC: str = "InstallLocation"
+IGNORE_VARIABLES: list[str] = [
+    "PWD",
+    "CMD_DURATION_MS", # nushell
+    "LAST_EXIT_CODE", # nushell
+]
 
 
 class VisualStudioAppPlatform(enum.StrEnum):
@@ -498,6 +503,9 @@ class VisualStudio:
         if not env.get("VSCMD_VER"):
             raise EnvironmentDumpError(
                 "Environment dump failed to capture Visual Studio variables.")
+
+        for name in IGNORE_VARIABLES:
+            env.pop(name)
 
         return env
 
