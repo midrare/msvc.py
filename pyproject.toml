@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "devenv"
+name = "msvc.py"
 version = "0.1.0"
 description = "Run commands under different developer prompt environments"
 authors = []
