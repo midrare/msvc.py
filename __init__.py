@@ -3,13 +3,13 @@ import pathlib
 import re
 import subprocess
 
-from .vstudioenv import EnvironmentDumpError
-from .vstudioenv import ProgramNotFoundError
-from .vstudioenv import VisualStudioError
-from .vstudioenv import find_visual_studio_by_path
-from .vstudioenv import find_visual_studios
-from .vstudioenv import find_visual_studio_by_uid
-from .vstudioenv import get_visual_studio_env_vars
+from .msvc import EnvironmentDumpError
+from .msvc import ProgramNotFoundError
+from .msvc import VisualStudioError
+from .msvc import find_visual_studio_by_path
+from .msvc import find_visual_studios
+from .msvc import find_visual_studio_by_uid
+from .msvc import get_visual_studio_env_vars
 
 
 def dump(
