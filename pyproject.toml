@@ -2,7 +2,7 @@
 name = "msvc.py"
 version = "0.1.0"
 description = "Run commands under different developer prompt environments"
-authors = []
+authors = ["midrare"]
 license = "MIT"
 
 [tool.poetry.dependencies]
