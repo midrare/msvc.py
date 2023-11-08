@@ -46,6 +46,6 @@ VSCMD_VER=17.7.6
 
 ```bash
 # start a visual studio developer prompt with nushell
-> nu -e 'python "./msvc.py" dump --read-cache --write-cache --json | from json | load-env'
+> nu -e 'python "./msvc.py" dump --json | from json | load-env'
 ```
 
