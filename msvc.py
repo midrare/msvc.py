@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright © 2023 midrare
+# Copyright © 2024 midrare
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated
