@@ -29,7 +29,7 @@ from __future__ import annotations
 
 __author__: str = 'midrare'
 __license__: str = 'MIT'
-__version__: str = '0.1.0'
+__version__: str = '0.1.1'
 
 import argparse
 import configparser
