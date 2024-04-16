@@ -666,25 +666,16 @@ def _clean_arg(name: str,
     return name, value
 
 
-def _calc_checksum(args: None | tuple[str] | list[str] = None,
-                   kwargs: None | dict[str, bool | int | float | str] = None) -> str:
-    args = args or tuple()
-    kwargs = kwargs or {}
-
-    o = {}
-
-    for arg in args:
-        name, value = _clean_arg(arg)
-        o[name] = value if value is not None else True
-
-    for k, v in kwargs.items():
-        name, value = _clean_arg(k, v)
-        o[name] = value if value is not None else True
-
+def _calc_checksum(o: typing.Any) -> str:
     checksum = hashlib.md5()
 
-    jsn = json.dumps(o, sort_keys=True, ensure_ascii=True)
-    checksum.update(jsn.encode("utf-8"))
+    if isinstance(o, (tuple, list)):
+        for e in sorted(o):
+            checksum.update(str(e).encode('utf-8'))
+    elif isinstance(o, dict):
+        checksum.update(json.dumps(sorted(list(o.items()))).encode('utf-8'))
+    else:
+        checksum.update(str(o).encode('utf-8'))
 
     return checksum.hexdigest()
 
@@ -699,8 +690,9 @@ def get_visual_studio_env_vars(
     env = None
     env_cache = EnvironmentCache("visualstudio")
 
-    args_hash = _calc_checksum(vstudio_args)
-    env_hash = _calc_checksum(sorted(list(os.environ)))
+    args_hash = _calc_checksum([_clean_arg(e) for e in vstudio_args])
+    env_hash = _calc_checksum(
+        {k: v for k, v in os.environ.items() if k not in IGNORE_VARIABLES})
     config = f"{vstudio.version}-{args_hash}-{env_hash}"
 
     if not env and read_cache:
