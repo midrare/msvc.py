@@ -512,7 +512,7 @@ class VisualStudio:
                 "Environment dump failed to capture Visual Studio variables.")
 
         for name in IGNORE_VARIABLES:
-            env.pop(name)
+            env.pop(name, None)
 
         return env
 
