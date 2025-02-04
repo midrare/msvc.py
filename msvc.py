@@ -62,8 +62,10 @@ REG_UNINSTALL64: str = (
 REG_INSTALL_LOC: str = "InstallLocation"
 IGNORE_VARIABLES: list[str] = [
     "PWD",
-    "CMD_DURATION_MS", # nushell
-    "LAST_EXIT_CODE", # nushell
+    "CMD_DURATION_MS",  # nushell
+    "LAST_EXIT_CODE",  # nushell
+    "FILE_PWD",  # nushell
+    "CURRENT_FILE",  # nushell
     "PROMPT",
     "PROMPT_COMMAND",
     "PROMPT_COMMAND_RIGHT",
