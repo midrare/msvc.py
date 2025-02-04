@@ -1,3 +1,6 @@
+# use this file with `source msvc.nu`
+# make sure msvc.py is in same directory or in $PATH
+
 (do {
     let filename = "msvc.py"
     let relfile = [($env.CURRENT_FILE | path dirname), $filename] | path join
