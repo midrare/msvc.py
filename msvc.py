@@ -492,28 +492,44 @@ class VisualStudio:
         if not bat:
             raise EnvironmentDumpError("Failed to find env startup script.")
 
+        cmd = [bat, "-no_logo"] + args + ["&", "set"]
+        cmd_str = ' '.join(
+            f"'{e}'" if re.search('\\s', str(e))
+            else str(e)
+            for e in cmd
+        )
+
         # see $VISUALSTUDIO/Common7/Tools/vsdevcmd/core/parse_cmd.bat for
         # valid command-line arguments
         try:
-            output = subprocess.run(
-                [bat, "-no_logo"] + args + ["&", "set"],
+            cmd_result = subprocess.run(
+                cmd,
                 capture_output=True,
                 text=True,
                 shell=True,
                 timeout=self.TIMEOUT_SECS,
-            ).stdout
+            )
         except subprocess.TimeoutExpired:
-            raise EnvironmentDumpError("Environment dump timed out.")
+            raise EnvironmentDumpError(
+                f"Environment dump timed out ({self.TIMEOUT_SECS}s). "
+                f"Command: {cmd_str}"
+            )
 
-        for line in output.splitlines():
-            if not line.startswith("["):  # errors come in form of "[ERR]: msg"
+        errmsg = cmd_result.stderr.splitlines()
+        for line in cmd_result.stdout.splitlines():
+            if m := re.fullmatch(r'\[(.+?)\]:\s+(.+?)', line):
+                errmsg.append(m.group(2))
+            else:
                 t = line.split("=", maxsplit=1)
                 if t and len(t) >= 2:
                     env[t[0]] = t[1]
 
         if not env.get("VSCMD_VER"):
             raise EnvironmentDumpError(
-                "Environment dump failed to capture Visual Studio variables.")
+                f"Environment dump failed to capture "
+                f"Visual Studio variables: "
+                f"{' '.join(errmsg)}"
+            )
 
         for name in IGNORE_VARIABLES:
             env.pop(name, None)
