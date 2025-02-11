@@ -492,7 +492,7 @@ class VisualStudio:
         if not bat:
             raise EnvironmentDumpError("Failed to find env startup script.")
 
-        cmd = ["cmd", "/c", bat, "-no_logo"] + args + ["&", "set"]
+        cmd = [bat, "-no_logo"] + args + ["&", "set"]
         cmd_str = ' '.join(
             f"'{e}'" if re.search('\\s', str(e))
             else str(e)
