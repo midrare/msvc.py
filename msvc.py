@@ -524,11 +524,14 @@ class VisualStudio:
                 if t and len(t) >= 2:
                     env[t[0]] = t[1]
 
+        if not env:
+            raise EnvironmentDumpError("Environment dump is empty.")
+
         if not env.get("VSCMD_VER"):
+            errmsg_ = ' '.join(errmsg)
             raise EnvironmentDumpError(
-                f"Environment dump failed to capture "
-                f"Visual Studio variables: "
-                f"{' '.join(errmsg)}"
+                f"Dump does not contain expected Visual Studio variables"
+                + (f": {errmsg_}" if errmsg_ else "")
             )
 
         for name in IGNORE_VARIABLES:
