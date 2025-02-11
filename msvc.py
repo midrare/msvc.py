@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright © 2024 midrare
+# Copyright © 2024-2025 midrare
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated
@@ -27,7 +27,7 @@
 
 from __future__ import annotations
 
-__author__: str = 'midrare'
+__author__: str = 'midrare <midrare9@gmail.com>'
 __license__: str = 'MIT'
 __version__: str = '0.1.1'
 
