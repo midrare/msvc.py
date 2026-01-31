@@ -27,9 +27,9 @@
 
 from __future__ import annotations
 
-__author__: str = 'midrare <midrare9@gmail.com>'
-__license__: str = 'MIT'
-__version__: str = '0.1.1'
+__author__: str = "midrare <midrare9@gmail.com>"
+__license__: str = "MIT"
+__version__: str = "0.1.2"
 
 import argparse
 import configparser
@@ -55,17 +55,19 @@ except ImportError:
 EXITCODE_SUCCESS: int = 0
 EXITCODE_FAILED_TO_ACQUIRE_ENV: int = 254
 
-REG_UNINSTALL32: str = (
-    "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")
+REG_UNINSTALL32: str = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
 REG_UNINSTALL64: str = (
-    "SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall")
+    "SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
+)
 REG_INSTALL_LOC: str = "InstallLocation"
 IGNORE_VARIABLES: list[str] = [
     "PWD",
+    "config",  # nushell
     "CMD_DURATION_MS",  # nushell
     "LAST_EXIT_CODE",  # nushell
     "FILE_PWD",  # nushell
     "CURRENT_FILE",  # nushell
+    "ENV_CONVERSIONS",  # nushell
     "PROMPT",
     "PROMPT_COMMAND",
     "PROMPT_COMMAND_RIGHT",
@@ -73,8 +75,29 @@ IGNORE_VARIABLES: list[str] = [
     "PROMPT_INDICATOR_VI_INSERT",
     "PROMPT_INDICATOR_VI_NORMAL",
     "PROMPT_MULTILINE_INDICATOR",
-    "WT_PROFILE_ID",
-    "WT_SESSION",
+    "WT_PROFILE_ID",  # windows terminal
+    "WT_SESSION",  # windows terminal
+]
+NUSHELL_PATH_VARIABLES: list[str] = [
+    "PATH",
+    "Path",
+    "EXTERNAL_INCLUDE",
+    "CPLUS_INCLUDE_PATH",
+    "C_INCLUDE_PATH",
+    "INCLUDE",
+    "LIB",
+    "LIBPATH",
+    "PSModulePath",
+    "MAGICK_CONFIGURE_PATH",
+    "MAGICK_CODER_MODULE_PATH",
+    "__VSCMD_PREINIT_PATH",
+    "PATHEXT",
+    "XDG_DATA_DIRS",
+    "WindowsLibPath",
+    "WindowsSdkBinPath",
+    "WindowsSdkVerBinPath",
+    "WindowsSDK_ExecutablePath_x64",
+    "WindowsSDK_ExecutablePath_x86",
 ]
 
 
@@ -117,15 +140,14 @@ class Arch(enum.StrEnum):
 class SemanticVersion:
     def __init__(self, version: str) -> None:
         m = re.match(
-            r"^([0-9]+)\.([0-9]+)\.([0-9]+)" +
-            r"(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?" +
-            r"(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$",
+            r"^([0-9]+)\.([0-9]+)\.([0-9]+)"
+            + r"(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?"
+            + r"(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$",
             version,
         )
 
         if not m:
-            raise ValueError(
-                f'"{version}" is not a valid semantic version string.')
+            raise ValueError(f'"{version}" is not a valid semantic version string.')
 
         self.major: int = int(m.group(1))
         self.minor: int = int(m.group(2))
@@ -214,8 +236,7 @@ class EnvironmentCache:
         elif platform.system() == "Darwin":
             return os.path.expanduser("~/Library/Caches")
         else:
-            return os.getenv("XDG_CACHE_HOME") or \
-                os.path.expanduser("~/.cache")
+            return os.getenv("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
 
     @classmethod
     def _read_json(cls, path: str) -> None | list | dict:
@@ -283,7 +304,6 @@ def get_host_arch() -> Arch:
     return arch
 
 
-
 def _is_reg_key_match(
     prog_key: int,
     prog: dict[str, bool | int | str],
@@ -343,11 +363,9 @@ def _read_reg_uninst_paths(
                 try:
                     with winreg.OpenKey(h_uninst, prog_uid) as h_prog:
                         # noinspection PyTypeChecker
-                        if _is_reg_key_match(
-                                h_prog, prog, regex):  # type: ignore
+                        if _is_reg_key_match(h_prog, prog, regex):  # type: ignore
                             try:
-                                loc, _ = winreg.QueryValueEx(
-                                    h_prog, REG_INSTALL_LOC)
+                                loc, _ = winreg.QueryValueEx(h_prog, REG_INSTALL_LOC)
                                 loc = loc.strip(" \v\t'\"")
                                 install_locs.append(loc)
                                 break
@@ -361,28 +379,31 @@ def _read_reg_uninst_paths(
     return install_locs
 
 
-def read_winreg_uninstall_paths(prog: dict[str, bool | int | str],
-                                regex: bool = False) -> list[str]:
+def read_winreg_uninstall_paths(
+    prog: dict[str, bool | int | str], regex: bool = False
+) -> list[str]:
     if not winreg:
         return []
-    return (_read_reg_uninst_paths(winreg.HKEY_CURRENT_USER, REG_UNINSTALL32,
-                                   prog, regex) +
-            _read_reg_uninst_paths(winreg.HKEY_CURRENT_USER, REG_UNINSTALL64,
-                                   prog, regex) +
-            _read_reg_uninst_paths(winreg.HKEY_LOCAL_MACHINE, REG_UNINSTALL32,
-                                   prog, regex) +
-            _read_reg_uninst_paths(winreg.HKEY_LOCAL_MACHINE, REG_UNINSTALL64,
-                                   prog, regex))
+    return (
+        _read_reg_uninst_paths(winreg.HKEY_CURRENT_USER, REG_UNINSTALL32, prog, regex)
+        + _read_reg_uninst_paths(winreg.HKEY_CURRENT_USER, REG_UNINSTALL64, prog, regex)
+        + _read_reg_uninst_paths(
+            winreg.HKEY_LOCAL_MACHINE, REG_UNINSTALL32, prog, regex
+        )
+        + _read_reg_uninst_paths(
+            winreg.HKEY_LOCAL_MACHINE, REG_UNINSTALL64, prog, regex
+        )
+    )
 
 
-def read_winreg_uninstall_path(prog: dict[str, bool | int | str],
-                               regex: bool = False) -> None | str:
+def read_winreg_uninstall_path(
+    prog: dict[str, bool | int | str], regex: bool = False
+) -> None | str:
     locs = read_winreg_uninstall_paths(prog, regex)
     return locs[0] if locs else None
 
 
-def _argparse_caseins_choice_type(
-        choices: list[str]) -> typing.Callable[[str], str]:
+def _argparse_caseins_choice_type(choices: list[str]) -> typing.Callable[[str], str]:
     lowercase_to_normalcase = {s.lower(): s for s in choices}
 
     def check(arg: str) -> str:
@@ -419,14 +440,12 @@ def _argparse_path_type(
             if os.path.exists(arg):
                 raise argparse.ArgumentTypeError(f'"{arg}" already exists.')
         else:
-            if (type_ == "file" and os.path.exists(arg) and
-                    not os.path.isfile(arg)):
+            if type_ == "file" and os.path.exists(arg) and not os.path.isfile(arg):
+                raise argparse.ArgumentTypeError(f'"{arg}" exists and is not a file.')
+            elif type_ == "dir" and os.path.exists(arg) and not os.path.isdir(arg):
                 raise argparse.ArgumentTypeError(
-                    f'"{arg}" exists and is not a file.')
-            elif (type_ == "dir" and os.path.exists(arg) and
-                  not os.path.isdir(arg)):
-                raise argparse.ArgumentTypeError(
-                    f'"{arg}" exists and is not a directory.')
+                    f'"{arg}" exists and is not a directory.'
+                )
 
         return arg
 
@@ -447,7 +466,8 @@ class VisualStudio:
             cfg.read(str(ini_path))
         except (FileNotFoundError, KeyError, ValueError):
             raise ProgramNotFoundError(
-                '"{root}" is not a Visual Studio program directory.')
+                '"{root}" is not a Visual Studio program directory.'
+            )
 
         self._uid: str = cfg["Info"]["InstallationID"]
         self._name: str = cfg["Info"]["InstallationName"]
@@ -493,10 +513,8 @@ class VisualStudio:
             raise EnvironmentDumpError("Failed to find env startup script.")
 
         cmd = [bat, "-no_logo"] + args + ["&", "set"]
-        cmd_str = ' '.join(
-            f"'{e}'" if re.search('\\s', str(e))
-            else str(e)
-            for e in cmd
+        cmd_str = " ".join(
+            f"'{e}'" if re.search("\\s", str(e)) else str(e) for e in cmd
         )
 
         # see $VISUALSTUDIO/Common7/Tools/vsdevcmd/core/parse_cmd.bat for
@@ -511,13 +529,12 @@ class VisualStudio:
             )
         except subprocess.TimeoutExpired:
             raise EnvironmentDumpError(
-                f"Environment dump timed out ({self.TIMEOUT_SECS}s). "
-                f"Command: {cmd_str}"
+                f"Environment dump timed out ({self.TIMEOUT_SECS}s). Command: {cmd_str}"
             )
 
         errmsg = cmd_result.stderr.splitlines()
         for line in cmd_result.stdout.splitlines():
-            if m := re.fullmatch(r'\[(.+?)\]:\s+(.+?)', line):
+            if m := re.fullmatch(r"\[(.+?)\]:\s+(.+?)", line):
                 errmsg.append(m.group(2))
             else:
                 t = line.split("=", maxsplit=1)
@@ -528,7 +545,7 @@ class VisualStudio:
             raise EnvironmentDumpError("Environment dump is empty.")
 
         if not env.get("VSCMD_VER"):
-            errmsg_ = ' '.join(errmsg)
+            errmsg_ = " ".join(errmsg)
             raise EnvironmentDumpError(
                 f"Dump does not contain expected Visual Studio variables"
                 + (f": {errmsg_}" if errmsg_ else "")
@@ -591,11 +608,13 @@ class VisualStudioInstaller:
         # ...\Microsoft Visual Studio\2022\Professional\Common7\IDE\devenv.exe
         paths = []
         for vsdev in vsdevs:
-            if (prod_path := vsdev.get("productPath")) and (m := re.match(
+            if (prod_path := vsdev.get("productPath")) and (
+                m := re.match(
                     r"^(.+)[\\/]Common[^\\/]*[\\/]IDE[\\/][^\\/]+$",
                     prod_path,
                     re.IGNORECASE,
-            )):
+                )
+            ):
                 paths.append(m.group(1))
 
         return paths
@@ -612,7 +631,8 @@ def read_visual_studios_from_winreg() -> list[VisualStudio]:
 def read_visual_studios_from_installer() -> list[VisualStudio]:
     vstudios = []
     if loc := read_winreg_uninstall_path(
-            {"DisplayName": "Microsoft Visual Studio Installer"}):
+        {"DisplayName": "Microsoft Visual Studio Installer"}
+    ):
         vsi = VisualStudioInstaller(loc)
         vstudios.extend(VisualStudio(p) for p in vsi.get_visual_studio_roots())
     return vstudios
@@ -649,9 +669,18 @@ def find_visual_studio_by_path(path: str | pathlib.Path) -> None | VisualStudio:
     return None
 
 
-def _clean_arg(name: str,
-               value: None | bool | int | float | str = None,
-               ) -> tuple[str, None | bool | int | float | str]:
+def _split_path(path: str) -> list[str]:
+    if not path or path.isspace():
+        return []
+
+    x = path.split(os.pathsep)
+    return [e for e in x if e and not e.isspace()]
+
+
+def _clean_arg(
+    name: str,
+    value: None | bool | int | float | str = None,
+) -> tuple[str, None | bool | int | float | str]:
     name = name.lstrip(" \v\t/-").strip()
 
     if m := re.match(r"^(?:no|disable)[_-]([a-zA-Z0-9_-]+)$", name):
@@ -694,11 +723,11 @@ def _calc_checksum(o: typing.Any) -> str:
 
     if isinstance(o, (tuple, list)):
         for e in sorted(o):
-            checksum.update(str(e).encode('utf-8'))
+            checksum.update(str(e).encode("utf-8"))
     elif isinstance(o, dict):
-        checksum.update(json.dumps(sorted(list(o.items()))).encode('utf-8'))
+        checksum.update(json.dumps(sorted(list(o.items()))).encode("utf-8"))
     else:
-        checksum.update(str(o).encode('utf-8'))
+        checksum.update(str(o).encode("utf-8"))
 
     return checksum.hexdigest()
 
@@ -715,7 +744,8 @@ def get_visual_studio_env_vars(
 
     args_hash = _calc_checksum([_clean_arg(e) for e in vstudio_args])
     env_hash = _calc_checksum(
-        {k: v for k, v in os.environ.items() if k not in IGNORE_VARIABLES})
+        {k: v for k, v in os.environ.items() if k not in IGNORE_VARIABLES}
+    )
     config = f"{vstudio.version}-{args_hash}-{env_hash}"
 
     if not env and read_cache:
@@ -736,7 +766,8 @@ def _add_cache_option(parser: argparse.ArgumentParser):
         action=argparse.BooleanOptionalAction,
         default=True,
         help="""read environment variables from cache if
-        present (default: %(default)s)""")
+        present (default: %(default)s)""",
+    )
 
     # noinspection PyTypeChecker
     parser.add_argument(
@@ -746,7 +777,8 @@ def _add_cache_option(parser: argparse.ArgumentParser):
         help="""write environment variables to cache if
         absent (default: %(default)s). Be careful that your
         environment variables do not contain sensitive info
-        as these will also be captured in the cache""")
+        as these will also be captured in the cache""",
+    )
 
 
 def _add_run_action(actions: argparse._SubParsersAction) -> argparse.ArgumentParser:
@@ -759,12 +791,14 @@ def _add_run_action(actions: argparse._SubParsersAction) -> argparse.ArgumentPar
 
         If the environment is sucessfully acquired and the command is run,
         the exit code will be the exit code returned by the command.
-        """)
+        """,
+    )
     runner.add_argument(
         "--shell",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help="use shell during execution (default: %(default)s)")
+        help="use shell during execution (default: %(default)s)",
+    )
 
     runner.add_argument(
         "--cwd",
@@ -785,8 +819,7 @@ def _add_run_action(actions: argparse._SubParsersAction) -> argparse.ArgumentPar
 
 
 def _add_dump_action(actions: argparse._SubParsersAction) -> argparse.ArgumentParser:
-    dumper = actions.add_parser(
-        Action.DUMP, help="dump environment variables")
+    dumper = actions.add_parser(Action.DUMP, help="dump environment variables")
 
     # noinspection PyTypeChecker
     dumper.add_argument(
@@ -794,6 +827,13 @@ def _add_dump_action(actions: argparse._SubParsersAction) -> argparse.ArgumentPa
         action=argparse.BooleanOptionalAction,
         default=False,
         help="output in json format (default: %(default)s)",
+    )
+
+    dumper.add_argument(
+        "--nushell",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="split $PATH and related variables into arrays",
     )
 
     _add_cache_option(dumper)
@@ -844,11 +884,12 @@ def _add_vs_options(parser: argparse.ArgumentParser):
 
 
 def _parse_args(args: list[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run/dump/list Visual Studio developer environments")
+    parser = argparse.ArgumentParser(
+        description="Run/dump/list Visual Studio developer environments"
+    )
     actions = parser.add_subparsers(
-        dest="action",
-        help="action to perform",
-        required=True)
+        dest="action", help="action to perform", required=True
+    )
 
     actions.add_parser(Action.LIST, help="show detected installations")
 
@@ -870,8 +911,7 @@ def main(argv: list[str]) -> int:
             print(f"{vs.uid} {vs.name} {vs.arch} {vs.root}")
         return EXITCODE_SUCCESS
     elif args.action in [Action.RUN, Action.DUMP]:
-        if args.instance and re.match(r"^[a-zA-Z0-9]{8}$",
-                                           args.instance):
+        if args.instance and re.match(r"^[a-zA-Z0-9]{8}$", args.instance):
             vstudio = find_visual_studio_by_uid(args.instance)
         elif args.instance:
             vstudio = find_visual_studio_by_path(args.instance)
@@ -896,10 +936,8 @@ def main(argv: list[str]) -> int:
             vs_args.append(f"-arch={target_arch}")
 
         env_vars = get_visual_studio_env_vars(
-            vstudio,
-            vs_args,
-            args.read_cache,
-            args.write_cache)
+            vstudio, vs_args, args.read_cache, args.write_cache
+        )
 
         if args.action == Action.RUN:
             if not env_vars:
@@ -914,6 +952,12 @@ def main(argv: list[str]) -> int:
             ).returncode
         elif args.action == Action.DUMP:
             if env_vars:
+                if args.nushell:
+                    for varname in NUSHELL_PATH_VARIABLES:
+                        if varname not in env_vars:
+                            continue
+                        env_vars[varname] = _split_path(env_vars[varname])
+
                 if args.json:
                     print(json.dumps(env_vars, indent=2))
                 else:
@@ -926,4 +970,3 @@ def main(argv: list[str]) -> int:
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
-
