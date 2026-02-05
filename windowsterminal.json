@@ -1,0 +1,8 @@
+{
+    "commandline": "\"C:\\Program Files\\nu\\bin\\nu.exe\" -e \"python \\\"C:\\\\Apps\\\\bin\\\\msvc.py\\\" dump --json --write-cache | from json | load-env\"",
+    "guid": "{11d6721c-3c18-4624-a53f-86c082914a43}",
+    "hidden": false,
+    "icon": "C:\\Program Files\\nu\\nu.ico",
+    "name": "Nushell MSVC",
+    "startingDirectory": "%USERPROFILE%"
+}
